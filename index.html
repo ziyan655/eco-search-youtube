@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>EcoSearch YouTube</title>
+
+	<link rel="stylesheet" href="css/style.css">
+	<link rel="stylesheet" href="css/jquery.fancybox.css">
+	<link rel="stylesheet" href="jqueryUI/jquery-ui.min.css">
+	<script src="https://code.jquery.com/jquery-1.11.3.min.js"></script>
+	<script src="https://code.jquery.com/jquery-migrate-1.2.1.min.js"></script>
+	<script src="js/script.js"></script>
+	<script src="js/jquery.fancybox.pack.js"></script>	
+	<script src="jqueryUI/jquery-ui.min.js"></script>
+	<script src="js/moment.js"></script>
+	<script>
+	$(document).ready(function(){
+		$(".fancybox").fancybox();
+	});
+	</script>
+</head>
+<body>
+	<div id="container">
+		<a href="http://www.solidzapps.com"><img src="img/logo.jpg" id="logo"/><img src="img/banner.jpg" id="banner"/></a>
+		<section>
+			<form id="searchForm" name="searchForm" onsubmit="return search()">
+				<div class="searchFieldcontainer">
+					<input type="search" id="query" class="searchField" placeholder="Search videos...">							
+					<button type="submit" name="searchButton" id="searchButton"></button>
+					<div id="searching">Searching...</div>
+				</div>
+			</form>		
+			<select name="orderPref" id="orderBySelectMenu">
+				<option value = "not selected" selected disabled>Order By</option>
+				<option value = "rating">Ratings</option>
+				<option value = "relevance">Revelance</option>
+				<option value = "viewCount">Views</option>
+				<option value = "date">Date</option>
+			</select>
+			<div id="maxResultNumSelecter">
+				<label id="resultPerPageLabel"for="amount"><b>Results per page </b></label>
+				<input type="text" id="amount" readonly style="border:0; color:black; font-weight:bold; width:15px;">
+				<div id="slider-range-min"></div>	
+			</div>
+			<form id="filter-buttonGroup">
+				<div id="definition">
+					<input type="radio" value="any" id="radio4" name="def" checked="checked"><label for="radio4">Any</label>
+					<input type="radio" value="high" id="radio5" name="def" ><label for="radio5">HD</label>
+					<input type="radio" value="standard" id="radio6" name="def"><label for="radio6">SD</label>
+				</div>
+				<div id="caption">
+					<input type="radio" value="any" id="radio1" name="radio" checked="checked"><label for="radio1">Any</label>
+					<input type="radio" value="closedCaption" id="radio2" name="radio" ><label for="radio2">Caption Only</label>
+					<input type="radio" value="none" id="radio3" name="radio"><label for="radio3">No Caption</label>
+				</div>
+				<div id="duration">
+					<input type="radio" value="any" id="radio7" name="dur" checked="checked"><label for="radio7">Any</label>
+					<input type="radio" value="long" id="radio8" name="dur" ><label for="radio8">20mins+</label>
+					<input type="radio" value="medium" id="radio9" name="dur"><label for="radio9">4-20mins</label>
+					<input type="radio" value="short" id="radio10" name="dur"><label for="radio10">&lt4mins</label>
+				</div>
+				<div id="postDate">
+					<input type="radio" value="20000" id="radio11" name="dat" checked="checked"><label for="radio11">Any</label>
+					<input type="radio" value="60" id="radio12" name="dat" ><label for="radio12">Last Hour</label>
+					<!-- need fix: today!=within 1 day-->
+					<input type="radio" value="1" id="radio13" name="dat"><label for="radio13">Today</label>
+					<input type="radio" value="7" id="radio14" name="dat"><label for="radio14">This Week</label>
+					<input type="radio" value="30" id="radio15" name="dat" ><label for="radio15">This Month</label>
+				</div>
+			</form>
+		</section>
+		<ul id="pageResults"></ul>
+		<div id="buttons"></div>
+	</div>
+
+	<script>
+	$(function() {
+		$( "button[type=submit]" )
+		.button({
+			icons: {
+				primary: "ui-icon-search"
+			},
+			text: false
+		});
+	});
+	$(function() {
+		$( "#orderBySelectMenu" ).selectmenu();		
+	});
+	$(function() {
+		$( "#slider-range-min" ).slider({
+			range: "min",
+			value: 7,
+			min: 5,
+			max: 25,
+			slide: function( event, ui ) {
+				$("#amount").val(ui.value);
+			}
+		});
+		$("#amount").val($("#slider-range-min").slider("value"));
+	});
+	$(function() {
+		$( "#caption" ).buttonset();
+		$( "#definition" ).buttonset();
+		$( "#duration" ).buttonset();
+		$( "#postDate" ).buttonset();
+
+	});
+	</script>
+</body>
+</html>

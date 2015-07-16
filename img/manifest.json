@@ -1,0 +1,17 @@
+{
+  "manifest_version": 2,
+  "name": "Eco Search YouTube\u2122",
+  "short_name": "By SolidZapps",
+  "description": "Effectively searches youtube videos, displays only useful information, and provides video-ads-free watching experience.",
+  "version": "1.3",
+  "icons": {
+    "128": "icon128a128.png"
+  },
+  "app": {
+    "urls": ["http://www.solidzapps.com/"],
+    "launch":{
+        "web_url": "http://www.solidzapps.com/"
+    }
+  }
+}
+
