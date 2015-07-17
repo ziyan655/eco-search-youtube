@@ -1,11 +1,45 @@
-
+//initialize jquery UI elements
+$(function() {
+	$( "button[type=submit]" )
+	.button({
+		icons: {
+			primary: "ui-icon-search"
+		},
+		text: false
+	});
+});
+$(function() {
+	$( "#orderBySelectMenu" ).selectmenu();		
+});
+$(function() {
+	$( "#slider-range-min" ).slider({
+		range: "min",
+		value: 7,
+		min: 5,
+		max: 25,
+		slide: function( event, ui ) {
+			$("#amount").val(ui.value);
+		}
+	});
+	$("#amount").val($("#slider-range-min").slider("value"));
+});
+$(function() {
+	$( "#caption" ).buttonset();
+	$( "#definition" ).buttonset();
+	$( "#duration" ).buttonset();
+	$( "#postDate" ).buttonset();
+});
+//disable default submit event, so only part of the page is submitted 
 $(function(){
 	$('#searchForm').submit(function(e){
 		e.preventDefault();
 	});
 })
-
-
+//load fancybox plugin
+$(document).ready(function(){
+	$(".fancybox").fancybox();
+});
+//auto-complete, requesting word suggestion from server
 $(document).ready(function(){
 	$("#query").autocomplete({
 		source: function(request, response){
@@ -31,30 +65,9 @@ $(document).ready(function(){
 		}
 	});
 });
-
+//get searching parameters from the user and send them as a request to Youtube Data API using ajax call
 function search(){
-	$("#searching").text("Searching...");
-	$("#searching").css("color", "black");
-	$('#searching').fadeIn("fast");
-
-	$('#pageResults').html('');
-	$('#buttons').html('');
-	
-	q = $('#query').val();
-	order = $("#orderBySelectMenu option:selected").val();
-	if(order=="not selected"){
-		order="relevance";
-	}
-	resultNum = $("#amount").val();
-	caption = $("#caption input:checked").val();
-	definition = $("#definition input:checked").val();
-	duration = $("#duration input:checked").val();
-	dateTmp = $("#postDate input:checked").val();
-	if(dateTmp == 60){
-		postDate = moment().subtract(3600,'seconds').format();
-	}else {
-		postDate = moment().subtract(dateTmp,'days').format();
-	}
+	getSearchParameters();
 
 	$.ajax({url:"https://www.googleapis.com/youtube/v3/search",
 		data:{
@@ -80,10 +93,51 @@ function search(){
 		});
 }
 
+function getSearchParameters(){
+	//initialize page content
+	$("#searching").text("Searching...");
+	$("#searching").css("color", "black");
+	$('#searching').fadeIn("fast");
+	$('#pageResults').html('');
+	$('#buttons').html('');
+
+	//get all search parameters, they're all global vars, so when going to next or previous paga, search parameters are preserved
+	q = $('#query').val();
+	order = $("#orderBySelectMenu option:selected").val();
+	if(order=="not selected"){
+		order="relevance";
+	}
+	resultNum = $("#amount").val();
+	caption = $("#caption input:checked").val();
+	definition = $("#definition input:checked").val();
+	duration = $("#duration input:checked").val();
+	dateTmp = $("#postDate input:checked").val();
+	if(dateTmp == 60){
+		postDate = moment().subtract(3600,'seconds').format();
+	}else {
+		postDate = moment().subtract(dateTmp,'days').format();
+	}
+}
+
+//display video results and buttons
+function getResult(data){
+	var nextPageToken = data.nextPageToken;
+	var prevPageToken = data.prevPageToken;
+	pageResultsNum = data.items.length;
+	//iteratively construct all the videos results
+	$.each(data.items, function(i, item){
+		var output = getOutput(item);
+		$('#pageResults').append(output);
+	});
+	//display buttons according to the number of available results
+	var buttons = getButtons(prevPageToken, nextPageToken);
+	$('#buttons').append(buttons);
+}
+
+//request detailed video info using Youtube Data API and construct html elements using the data received
 function getOutput(item){
-	
-	var videoId = item.id.videoId;
-	var videoData;
+	videoId = item.id.videoId;
+
 	$.ajax({url:"https://www.googleapis.com/youtube/v3/videos",
 		data:{
 			part: 'statistics,contentDetails,snippet',
@@ -92,9 +146,16 @@ function getOutput(item){
 			success:function(data){
 				videoData = data;
 			},
-			async:false
+			async:false	//must be synchronous, because video ids need to be fetched from server before requesting more info on the videos
 		});
+	
+	parseApiData();
+	$('#searching').fadeOut("fast");
+	return videoItemFactory();
+}
 
+//parse api data to results that can be displayed as html elements
+function parseApiData(){
 	viewCount = videoData.items[0].statistics.viewCount;
 	viewCountHum = (viewCount + "").replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 	likeCount = videoData.items[0].statistics.likeCount;
@@ -117,8 +178,10 @@ function getOutput(item){
 	channelId = videoData.items[0].snippet.channelId;
 	videoDate = videoData.items[0].snippet.publishedAt;
 	videoDateHuman = moment(videoDate).format("MMMM Do YYYY, h:mm:ss a");
+}
 
-	$('#searching').fadeOut("fast");
+//constructs html elements for one video
+function videoItemFactory(){
 	var output = '<li>' +
 	'<div class="list-left">' +
 	'<a class="fancybox fancybox.iframe" href="http://www.youtube.com/embed/'+videoId+'"><img src="'+thumb+'"></a>'+
@@ -137,44 +200,10 @@ function getOutput(item){
 	return output;
 }
 
-function getResult(data){
-	var nextPageToken = data.nextPageToken;
-	var prevPageToken = data.prevPageToken;
-	pageResultsNum = data.items.length;
-
-	$.each(data.items, function(i, item){
-		var output = getOutput(item);
-		$('#pageResults').append(output);
-	});
-
-	var buttons = getButtons(prevPageToken, nextPageToken);
-	$('#buttons').append(buttons);
-}
-
+//similar to search() but invoked when the next page button is clicked
 function nextPage(){
-	var token = $('#next-button').data('token');
-	var q = $('#next-button').data('query');
-	$("#searching").text("Searching...");
-	$("#searching").css("color", "black");
-	$('#searching').fadeIn("fast");
-	$('#pageResults').html('');
-	$('#buttons').html('');
-
-	q = $('#query').val();
-	order = $("#orderBySelectMenu option:selected").val();
-	if(order=="not selected"){
-		order="relevance";
-	}
-	resultNum = $("#amount").val();
-	caption = $("#caption input:checked").val();
-	definition = $("#definition input:checked").val();
-	duration = $("#duration input:checked").val();
-	dateTmp = $("#postDate input:checked").val();
-	if(dateTmp == 60){
-		postDate = moment().subtract(3600,'seconds').format();
-	}else {
-		postDate = moment().subtract(dateTmp,'days').format();
-	}
+	var token = $('#next-button').data('token');	//pass page token using element attribute
+	getSearchParameters();
 
 	$.ajax({url:"https://www.googleapis.com/youtube/v3/search",
 		data:{
@@ -199,34 +228,12 @@ function nextPage(){
 			},
 			async:true
 		});
-
 }
 
-
+//similar to search() but invoked when the previous page button is clicked
 function prevPage(){
 	var token = $('#prev-button').data('token');
-	var q = $('#prev-button').data('query');
-	$("#searching").text("Searching...");
-	$("#searching").css("color", "black");
-	$('#searching').fadeIn("fast");
-	$('#pageResults').html('');
-	$('#buttons').html('');
-
-	q = $('#query').val();
-	order = $("#orderBySelectMenu option:selected").val();
-	if(order=="not selected"){
-		order="relevance";
-	}
-	resultNum = $("#amount").val();
-	caption = $("#caption input:checked").val();
-	definition = $("#definition input:checked").val();
-	duration = $("#duration input:checked").val();
-	dateTmp = $("#postDate input:checked").val();
-	if(dateTmp == 60){
-		postDate = moment().subtract(3600,'seconds').format();
-	}else {
-		postDate = moment().subtract(dateTmp,'days').format();
-	}
+	getSearchParameters();
 
 	$.ajax({url:"https://www.googleapis.com/youtube/v3/search",
 		data:{
@@ -248,25 +255,29 @@ function prevPage(){
 		});
 }
 
+//construct button elements
 function getButtons(prevPageToken, nextPageToken){
 	if(!prevPageToken){
+		//reached end of page
 		if(pageResultsNum < resultNum) {
 			return "";
 		} else {
-			var btnoutput = '<div class="pagingButtonContainer">'+'<button id="next-button" class="pagingButton" data-token="'+nextPageToken+'" data-query="'+q+'"' +
+			//first page, no prev page button
+			var btnoutput = '<div class="pagingButtonContainer">'+'<button id="next-button" class="pagingButton" data-token="' + nextPageToken+'"' + 
 			'onclick="nextPage();">Next</button></div>';
 		}
 	} else if(pageResultsNum < resultNum) {
-		var btnoutput = '<div class="pagingButtonContainer">'+'<button id="prev-button" class="pagingButton" data-token="'+prevPageToken+'" data-query="'+q+'"' +
+		//reached end of page when there were previous pages
+		var btnoutput = '<div class="pagingButtonContainer">'+'<button id="prev-button" class="pagingButton" data-token="' + prevPageToken + '"' +
 		'onclick="prevPage();">Prev</button></div>';
 	} else {
+		//normal case
 		var btnoutput = '<div class="pagingButtonContainer">'+
-		'<button id="prev-button" class="pagingButton" data-token="'+prevPageToken+'" data-query="'+q+'"' +
+		'<button id="prev-button" class="pagingButton" data-token="'+prevPageToken+'"' +
 		'onclick="prevPage();">Prev</button>' +
-		'<button id="next-button" class="pagingButton" data-token="'+nextPageToken+'" data-query="'+q+'"' +
+		'<button id="next-button" class="pagingButton" data-token="'+nextPageToken+'"' +
 		'onclick="nextPage();">Next</button></div>';
 	}
 	return btnoutput;
 }
-
 

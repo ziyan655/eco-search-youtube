@@ -2,7 +2,6 @@
 <html>
 <head>
 	<title>EcoSearch YouTube</title>
-
 	<link rel="stylesheet" href="css/style.css">
 	<link rel="stylesheet" href="css/jquery.fancybox.css">
 	<link rel="stylesheet" href="jqueryUI/jquery-ui.min.css">
@@ -12,11 +11,6 @@
 	<script src="js/jquery.fancybox.pack.js"></script>	
 	<script src="jqueryUI/jquery-ui.min.js"></script>
 	<script src="js/moment.js"></script>
-	<script>
-	$(document).ready(function(){
-		$(".fancybox").fancybox();
-	});
-	</script>
 </head>
 <body>
 	<div id="container">
@@ -24,7 +18,7 @@
 		<section>
 			<form id="searchForm" name="searchForm" onsubmit="return search()">
 				<div class="searchFieldcontainer">
-					<input type="search" id="query" class="searchField" placeholder="Search videos...">							
+					<input type="search" id="query" class="searchField" placeholder="Search videos..." />							
 					<button type="submit" name="searchButton" id="searchButton"></button>
 					<div id="searching">Searching...</div>
 				</div>
@@ -61,7 +55,6 @@
 				<div id="postDate">
 					<input type="radio" value="20000" id="radio11" name="dat" checked="checked"><label for="radio11">Any</label>
 					<input type="radio" value="60" id="radio12" name="dat" ><label for="radio12">Last Hour</label>
-					<!-- need fix: today!=within 1 day-->
 					<input type="radio" value="1" id="radio13" name="dat"><label for="radio13">Today</label>
 					<input type="radio" value="7" id="radio14" name="dat"><label for="radio14">This Week</label>
 					<input type="radio" value="30" id="radio15" name="dat" ><label for="radio15">This Month</label>
@@ -71,39 +64,5 @@
 		<ul id="pageResults"></ul>
 		<div id="buttons"></div>
 	</div>
-
-	<script>
-	$(function() {
-		$( "button[type=submit]" )
-		.button({
-			icons: {
-				primary: "ui-icon-search"
-			},
-			text: false
-		});
-	});
-	$(function() {
-		$( "#orderBySelectMenu" ).selectmenu();		
-	});
-	$(function() {
-		$( "#slider-range-min" ).slider({
-			range: "min",
-			value: 7,
-			min: 5,
-			max: 25,
-			slide: function( event, ui ) {
-				$("#amount").val(ui.value);
-			}
-		});
-		$("#amount").val($("#slider-range-min").slider("value"));
-	});
-	$(function() {
-		$( "#caption" ).buttonset();
-		$( "#definition" ).buttonset();
-		$( "#duration" ).buttonset();
-		$( "#postDate" ).buttonset();
-
-	});
-	</script>
 </body>
 </html>
