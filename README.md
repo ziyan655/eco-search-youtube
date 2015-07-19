@@ -1,5 +1,7 @@
 # eco-search-youtube
-EcoSearch Youtube is a Chrome Web Store app that effectively searches youtube videos, display results with only useful information, and provide video-ads-free watching experience. Also available at www.solidzapps.com
+EcoSearch Youtube is a Chrome Web Store app that effectively searches youtube videos, display results with only useful information, and provide video-ads-free watching experience. 
+Chrome Store link: https://chrome.google.com/webstore/detail/eco-search-youtube/hbhpophgfcppcpeokdgmdnndffomjoao
+Also available at www.solidzapps.com
 
 Features:
 
