@@ -14,9 +14,9 @@ $(function() {
 $(function() {
 	$( "#slider-range-min" ).slider({
 		range: "min",
-		value: 7,
+		value: 20,
 		min: 5,
-		max: 25,
+		max: 50,
 		slide: function( event, ui ) {
 			$("#amount").val(ui.value);
 		}
@@ -56,8 +56,7 @@ $(document).ready(function(){
 							value: item[0]
 						}
 					}));
-				},
-				async:false
+				}
 			});
 		},
 		select: function( event, ui ) {
@@ -65,8 +64,12 @@ $(document).ready(function(){
 		}
 	});
 });
+
 //get searching parameters from the user and send them as a request to Youtube Data API using ajax call
 function search(){
+	videoData = [];		//clear variable
+	ajaxRequests = [];
+	videoId = [];
 	getSearchParameters();
 
 	$.ajax({url:"https://www.googleapis.com/youtube/v3/search",
@@ -88,9 +91,9 @@ function search(){
 				}else {
 					getResult(data);
 				}
-			},
-			async:true
+			}
 		});
+
 }
 
 function getSearchParameters(){
@@ -119,77 +122,91 @@ function getSearchParameters(){
 	}
 }
 
+var videoData = [];
+var ajaxRequests = [];	
+var videoId = [];
 //display video results and buttons
 function getResult(data){
 	var nextPageToken = data.nextPageToken;
 	var prevPageToken = data.prevPageToken;
 	pageResultsNum = data.items.length;
-	//iteratively construct all the videos results
+	var seq = 0;	//keep track of the ajax call order
+
 	$.each(data.items, function(i, item){
-		var output = getOutput(item);
-		$('#pageResults').append(output);
+		fetchData(item, seq);
+		seq++;
 	});
-	//display buttons according to the number of available results
-	var buttons = getButtons(prevPageToken, nextPageToken);
-	$('#buttons').append(buttons);
+
+	//one call back function to handle all the finished ajax requests
+	$.when.apply(null, ajaxRequests).then(function() {
+		for(var i = 0; i < pageResultsNum; i++){
+			parseApiData(i);
+			$('#pageResults').append(videoItemFactory(i));
+		}
+		$('#searching').fadeOut("fast");
+
+		//display buttons according to the number of available results
+		var buttons = getButtons(prevPageToken, nextPageToken);
+		$('#buttons').append(buttons);
+	});
 }
 
-//request detailed video info using Youtube Data API and construct html elements using the data received
-function getOutput(item){
-	videoId = item.id.videoId;
+//make ajax request to get all the video info and store it in one index of an array
+function fetchData(item, seq){
+	videoId[seq] = item.id.videoId;
 
-	$.ajax({url:"https://www.googleapis.com/youtube/v3/videos",
+	ajaxRequests.push($.ajax({url:"https://www.googleapis.com/youtube/v3/videos",
 		data:{
 			part: 'statistics,contentDetails,snippet',
-			id:videoId,
+			id:videoId[seq],
 			key: 'AIzaSyCvk3NNMQASZgFkCNxIp9jH-l8O0PXhDUo'},
 			success:function(data){
-				videoData = data;
-			},
-			async:false	//must be synchronous, because video ids need to be fetched from server before requesting more info on the videos
-		});
-	
-	parseApiData();
-	$('#searching').fadeOut("fast");
-	return videoItemFactory();
+				callBack(data, seq);
+			}
+		}));	
+}
+
+//insert data at the specified array position
+function callBack(data, seq) {
+	videoData[seq] = data;	
 }
 
 //parse api data to results that can be displayed as html elements
-function parseApiData(){
-	viewCount = videoData.items[0].statistics.viewCount;
+function parseApiData(i){
+	viewCount = videoData[i].items[0].statistics.viewCount;
 	viewCountHum = (viewCount + "").replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-	likeCount = videoData.items[0].statistics.likeCount;
+	likeCount = videoData[i].items[0].statistics.likeCount;
 	likeCountHum = (likeCount + "").replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-	dislikeCount= videoData.items[0].statistics.dislikeCount;
+	dislikeCount= videoData[i].items[0].statistics.dislikeCount;
 	dislikeCountHum = (dislikeCount + "").replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-	durationISO8601 = videoData.items[0].contentDetails.duration;
-	definition = (videoData.items[0].contentDetails.definition).toUpperCase();
+	durationISO8601 = videoData[i].items[0].contentDetails.duration;
+	definition = (videoData[i].items[0].contentDetails.definition).toUpperCase();
 	totalSeconds = moment.duration(durationISO8601).asSeconds();
 	humanFormatDuration = moment.duration(totalSeconds, "seconds").humanize();
-	title = videoData.items[0].snippet.title;
-	descriptionFull = (videoData.items[0].snippet.description);
+	title = videoData[i].items[0].snippet.title;
+	descriptionFull = (videoData[i].items[0].snippet.description);
 	if(descriptionFull.length > 190){
 		description = descriptionFull.substring(0,190) + "...";
 	}else {
 		description = descriptionFull;
 	}
-	thumb = videoData.items[0].snippet.thumbnails.high.url;
-	channelTitle = videoData.items[0].snippet.channelTitle;
-	channelId = videoData.items[0].snippet.channelId;
-	videoDate = videoData.items[0].snippet.publishedAt;
+	thumb = videoData[i].items[0].snippet.thumbnails.high.url;
+	channelTitle = videoData[i].items[0].snippet.channelTitle;
+	channelId = videoData[i].items[0].snippet.channelId;
+	videoDate = videoData[i].items[0].snippet.publishedAt;
 	videoDateHuman = moment(videoDate).format("MMMM Do YYYY, h:mm:ss a");
 }
 
 //constructs html elements for one video
-function videoItemFactory(){
+function videoItemFactory(i){
 	var output = '<li>' +
 	'<div class="list-left">' +
-	'<a class="fancybox fancybox.iframe" href="http://www.youtube.com/embed/'+videoId+'"><img src="'+thumb+'"></a>'+
+	'<a class="fancybox fancybox.iframe" href="http://www.youtube.com/embed/'+videoId[i]+'"><img src="'+thumb+'"></a>'+
 	'</div>' +
 	'<div class="list-right">' +
-	'<a class="fancybox fancybox.iframe" href="http://www.youtube.com/embed/'+videoId+'"><p class="videoTitle"><b>'+title+'</b></p></a>' +
-	'<p class="videoPublishDate">By <a id="chTitle" href="https://www.youtube.com/channel/'+channelId+'">' + '<span class="author"><i>'+channelTitle+'</i></span></a> '+ videoDateHuman +'</p>' +
-	'<p class="duration-viewCount">' + humanFormatDuration + ' | ' + viewCountHum + ' views</p>' + 
+	'<a class="fancybox fancybox.iframe" href="http://www.youtube.com/embed/'+videoId[i]+'"><p class="videoTitle"><b>'+title+'</b></p></a>' +
+	'<p class="videoPublishDate">By <a id="chTitle" href="https://www.youtube.com/channel/'+channelId+'">' + '<span class="author"><i>'+channelTitle+'&nbsp&nbsp</i></span></a> '+ videoDateHuman +'</p>' +
+	'<p class="duration-viewCount">Duration: ' + humanFormatDuration + ' | ' + viewCountHum + ' views</p>' + 
 	'<p class="likes">' + likeCountHum + ' likes | ' + dislikeCountHum + ' dislikes</p>' +
 	'<p class="definitionOutput">' + definition + '</p>' +
 	'<p class="description">'+description+'</p>' +
@@ -225,8 +242,7 @@ function nextPage(){
 				}else {
 					getResult(data);
 				}
-			},
-			async:true
+			}
 		});
 }
 
@@ -250,8 +266,7 @@ function prevPage(){
 			key: 'AIzaSyCvk3NNMQASZgFkCNxIp9jH-l8O0PXhDUo'},
 			success:function(data){
 				getResult(data);
-			},
-			async:true
+			}
 		});
 }
 
@@ -280,4 +295,3 @@ function getButtons(prevPageToken, nextPageToken){
 	}
 	return btnoutput;
 }
-
